@@ -20,7 +20,7 @@ plt.plot(logs[:, :, 1].mean(axis=0), label = "test error", ls='--')
 plt.fill_between(range(logs.shape[1]), y1=logs[:, :, 1].mean(axis=0) + logs[:, :, 1].std(axis=0),
                  y2 = logs[:, :, 1].mean(axis=0) - logs[:, :, 1].std(axis=0), alpha=0.2)
 plt.xlabel("Training steps (samples)")
-plt.xlabel("RMSE (deg)")
+plt.ylabel("RMSE (deg)")
 plt.legend(loc='best')
 plt.grid(visible=True)
 plt.show()
