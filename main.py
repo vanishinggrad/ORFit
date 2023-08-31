@@ -4,6 +4,8 @@ import numpy as np
 np.set_printoptions(precision=4)
 
 def rotate(xs):
+    # rotate elements along axis 0 by random angles in [0, 180]
+
     angles = (180 * np.random.random(size=xs.shape[0]).astype('float32'))
     xs_new = []
     for i, (x, angle) in enumerate(zip(xs, angles)):
@@ -13,8 +15,9 @@ def rotate(xs):
     return xs_new, angles
 
 def gen_mnist_regression_data(digit=2):
+    # get digit-specific MNIST data
+
     (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
-    # re-scaling
     x_train = x_train / 255.0
     x_test = x_test / 255.0
     (x_train_rotated, y_train), (x_test_rotated, y_test) = (rotate(x_train[y_train == digit]), rotate(x_test[y_test == digit]))
@@ -23,7 +26,8 @@ def gen_mnist_regression_data(digit=2):
 
 
 def get_model():
-    # a 'linear' model
+    # a 'linear' model in TensorFlow
+
     model = tf.keras.Sequential([tf.keras.layers.Flatten(input_shape=(28, 28)),
         tf.keras.layers.Dense(1, activation='relu')])
 
@@ -35,6 +39,8 @@ def get_model():
     return model, loss_fn
 
 def get_stoch_gradient(model, loss_fn, inputs, labels):
+    # stochastic gradient with respect to a single (input, output pair), note usage in the code below
+
     with tf.GradientTape() as tape:
         predictions = model(inputs, training=True)
         pred_loss = loss_fn(labels, predictions)
@@ -42,32 +48,40 @@ def get_stoch_gradient(model, loss_fn, inputs, labels):
     return np.hstack([arr.numpy().ravel() for arr in gradients])
 
 def get_gradient(model, inputs):
+    # gradient with respect to a model output, refered to as \del f_i in the paper
+
     with tf.GradientTape() as tape:
         predictions = model(inputs, training=True)
     gradients = tape.gradient(predictions, model.trainable_variables)
     return np.hstack([arr.numpy().ravel() for arr in gradients])
 
 def get_projection(basis, vec):
-    # project given vector onto given basis
+    # project a vector onto a given basis
+
     if not (len(basis) > 0):
         return np.zeros_like(vec)
 
-    accum = []
+    vec_sum = np.zeros_like(vec)
     for col in range(basis.shape[1]):
         col = basis[:, col].ravel()
         vec_projected = np.dot(vec, col) * col / (np.linalg.norm(col, ord=2) ** 2 + 1e-10)
-        accum.append(vec_projected)
-    accum = np.array(accum).sum(axis=0)
+        vec_sum += vec_projected
 
-    return accum
+    return vec_sum
 
-def sample_data_sequence(inputs, labels, size=100):
-    idx_argsort = np.random.choice(np.arange(len(labels)), size=size,
+def sample_data_sequence(inputs, labels, n=100):
+    # the authors say that "an image rotated with a smaller angle arrives earlier"
+    # below is a simple weighing scheme based on the reciprocal of probability
+
+    idx_argsort = np.random.choice(np.arange(len(labels)), size=n,
                                    replace=False, p=(1 / labels) / np.sum(1 / labels))
     inputs, labels = inputs[idx_argsort], labels[idx_argsort]
     return inputs, labels
 
 def set_model_weights(vec, model):
+
+    # set model weights
+
     start = 0
     end = None
     for tv in model.trainable_variables:
@@ -80,7 +94,7 @@ def eval_model(model, x_train, y_train, x_test, y_test, return_arr = False, tf_v
 
     eval_train, eval_test = (np.sqrt(model.evaluate(x_train, y_train, verbose=tf_verbose)),
                              np.sqrt(model.evaluate(x_test, y_test, verbose=tf_verbose)))
-    print("RMSE (angle, degrees)", "\t", f"Train: {eval_train}", f"Test: {eval_test}")
+    print("RMSE (deg)", "\t", f"Train: {eval_train}", f"Test: {eval_test}")
     if return_arr:
         return eval_train, eval_test
 
@@ -89,10 +103,10 @@ def eval_model(model, x_train, y_train, x_test, y_test, return_arr = False, tf_v
 
 def ORfit(ds_size = 100, m=10, digit = 2):
 
-    SIZE_DATA_SEQUENCE = ds_size
+    n_ds = ds_size # number of elements in the data sequence
     model, loss_func = get_model()
     (x_train, y_train), (x_test, y_test) = gen_mnist_regression_data(digit=digit)
-    x_train, y_train = sample_data_sequence(x_train, y_train, size=SIZE_DATA_SEQUENCE)
+    x_train, y_train = sample_data_sequence(x_train, y_train, n=n_ds)
 
     logs = [eval_model(model, x_train, y_train, x_test, y_test, return_arr=True)]
 
@@ -101,7 +115,7 @@ def ORfit(ds_size = 100, m=10, digit = 2):
     w = np.hstack([arr.numpy().ravel() for arr in model.trainable_variables])
     m = m
 
-    for i in range(SIZE_DATA_SEQUENCE):
+    for i in range(n_ds):
 
         g = get_stoch_gradient(model, loss_func, np.expand_dims(x_train[i], axis=0), y_train[i])
         g_prime = g - get_projection(U, g)
@@ -126,7 +140,7 @@ def ORfit(ds_size = 100, m=10, digit = 2):
             temp = E
             temp = np.append(temp, np.zeros(shape=(temp.shape[0], 1)), axis=1)
             temp = np.append(temp, np.zeros(shape=(1, temp.shape[1])), axis=0)
-            temp[-1, -1] = np.dot(u, v_prime)#np.sum(u * v_prime)
+            temp[-1, -1] = np.dot(u, v_prime)
 
             U_prime, E_vals, V_temp = sp.linalg.svd(temp)
             E = sp.linalg.diagsvd(E_vals, *temp.shape)
@@ -143,8 +157,11 @@ def ORfit(ds_size = 100, m=10, digit = 2):
         set_model_weights(w, model)
 
 
-        if i == 1 or i % 10 == 0:
+        if i == 0 or i % 10 == 0:
             eval_model(model, x_train, y_train, x_test, y_test)
         logs.append(eval_model(model, x_train, y_train, x_test, y_test, return_arr=True))
 
     return logs
+
+
+ORfit(100, m=10, digit=2)

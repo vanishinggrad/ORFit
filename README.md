@@ -1,5 +1,6 @@
 
-This repo contains a simple implementation of the ORFit algorithm described in `Min, Youngjae, Kwangjun Ahn, and 
+This repo contains a simple TensorFlow 2 implementation of the ORFit algorithm described in `Min, Youngjae, Kwangjun 
+Ahn, and 
 Navid Azizan. "One-pass learning via bridging orthogonal gradient descent and recursive least-squares." 2022 IEEE 61st Conference on Decision and Control (CDC). IEEE, 2022.
 `
 <br><br>
