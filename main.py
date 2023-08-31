@@ -101,7 +101,7 @@ def eval_model(model, x_train, y_train, x_test, y_test, return_arr = False, tf_v
 
 
 
-def ORfit(ds_size = 100, m=10, digit = 2):
+def ORFit(ds_size = 100, m=10, digit = 2):
 
     n_ds = ds_size # number of elements in the data sequence
     model, loss_func = get_model()
@@ -164,4 +164,4 @@ def ORfit(ds_size = 100, m=10, digit = 2):
     return logs
 
 
-ORfit(100, m=10, digit=2)
+ORFit(100, m=10, digit=2)

@@ -5,6 +5,7 @@ Navid Azizan. "One-pass learning via bridging orthogonal gradient descent and re
 `
 <br><br>
 
-Run `main.py` or `multiple_runs.py` for single or multiple runs of the algorithms.
+Run `main.py` or `multiple_runs.py` for single or multiple runs of the algorithms. The second file re-creates Fig. 2
+(a) from the paper.
 
 Note: Some implementation details might be different so take it for what it is. As of now, the original authors have not released their code. 

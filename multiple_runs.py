@@ -8,7 +8,7 @@ try:
     data = np.load(f'logs_{num_runs}_runs.npz')
     logs = data["logs"]
 except:
-    logs = np.array([main.ORfit() for i in range(num_runs)])
+    logs = np.array([main.ORFit() for i in range(num_runs)])
     np.savez(f'logs_{num_runs}_runs', logs = logs)
 
 import matplotlib.pyplot as plt
